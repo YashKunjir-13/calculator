@@ -50,7 +50,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         case '=': // Compute the final expression
           _calculateResult();
           break;
-        case '<x| ': // Backspace: deletes the last input digit
+        case '<x|': // Backspace: deletes the last input digit
           _onBackspace();
           break;
         case '÷':
