@@ -171,10 +171,11 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
   /// Helper defining dynamic background colors for button classification categories.
   Color _getButtonColor(String text) {
-    if (text == 'AC') return const Color.fromARGB(255, 242, 239, 235)!;
-    if (text == 'CE') return const Color.fromARGB(255, 238, 233, 225)!;
-    if (['%', '÷', '×', '−', '+', '='].contains(text))
+    if (text == 'AC') return const Color.fromARGB(255, 242, 239, 235);
+    if (text == 'CE') return const Color.fromARGB(255, 238, 233, 225);
+    if (['%', '÷', '×', '−', '+', '='].contains(text)) {
       return Colors.orange[500]!;
+    }
     return Colors.white;
   }
 
@@ -188,70 +189,131 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         39,
       ), // Minty green page background
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // DISPLAY AREA:
-              // Wrapped in Expanded so it occupies all available screen height
-              // that remains after constructing the button grid below.
-              Expanded(
-                child: Container(
-                  alignment:
-                      Alignment.bottomRight, // Aligns content to bottom-right
-                  padding: const EdgeInsets.all(24.0),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 73, 71, 71),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      // Renders the running algebraic expression history (e.g. 5+3)
-                      Text(
-                        _expression,
-                        style: TextStyle(fontSize: 20, color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 10),
-                      // Renders the active number input or calculation result
-                      Text(
-                        _display,
-                        style: const TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromARGB(221, 253, 249, 249),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Scale padding with the smaller screen dimension so large
+            // desktop windows get breathing room without shrinking the
+            // grid, while small phone screens stay tight.
+            final shortestSide = constraints.maxWidth < constraints.maxHeight
+                ? constraints.maxWidth
+                : constraints.maxHeight;
+            final padding = (shortestSide * 0.03).clamp(8.0, 32.0);
 
-              // BUTTON GRID LAYOUT:
-              // Maps the 2D button list blueprint into Columns, Rows, and individual Expanded items.
-              Column(
-                children: _buttons.map((row) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: row.map((text) {
-                      return Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(6.0),
-                          child: CalculatorButton(
-                            text: text,
-                            backgroundColor: _getButtonColor(text),
-                            onPressed: () => _onButtonPressed(text),
+            return Padding(
+              padding: EdgeInsets.all(padding),
+              child: Column(
+                children: [
+                  // DISPLAY AREA:
+                  // Wrapped in Expanded so it occupies all available screen height
+                  // that remains after constructing the button grid below.
+                  Expanded(
+                    flex: 2,
+                    child: LayoutBuilder(
+                      builder: (context, displayConstraints) {
+                        // Base display font sizes on the panel's own height so
+                        // they visibly grow on large desktop windows instead of
+                        // staying phone-sized (FittedBox below only ever shrinks).
+                        final expressionFontSize = (displayConstraints
+                                    .maxHeight *
+                                0.14)
+                            .clamp(16.0, 40.0);
+                        final resultFontSize = (displayConstraints.maxHeight *
+                                0.32)
+                            .clamp(32.0, 96.0);
+
+                        return Container(
+                          alignment:
+                              Alignment.bottomRight, // Aligns content to bottom-right
+                          padding: EdgeInsets.all(padding * 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 73, 71, 71),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                }).toList(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              // Renders the running algebraic expression history (e.g. 5+3)
+                              // Wrapped in Expanded so its allotted space is always
+                              // bounded by the panel height, regardless of the
+                              // computed font size — FittedBox then only ever
+                              // shrinks to fit, which guarantees no overflow.
+                              Expanded(
+                                flex: 2,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    _expression,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontSize: expressionFontSize,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              // Renders the active number input or calculation result
+                              Expanded(
+                                flex: 5,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    _display,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontSize: resultFontSize,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color.fromARGB(
+                                        221,
+                                        253,
+                                        249,
+                                        249,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // BUTTON GRID LAYOUT:
+                  // Maps the 2D button list blueprint into Columns, Rows, and individual Expanded items.
+                  Expanded(
+                    flex: 5,
+                    child: Column(
+                      children: _buttons.map((row) {
+                        return Expanded(
+                          child: Row(
+                            children: row.map((text) {
+                              return Expanded(
+                                child: Padding(
+                                  padding: EdgeInsets.all(
+                                    padding < 16 ? 3 : 6,
+                                  ),
+                                  child: CalculatorButton(
+                                    text: text,
+                                    backgroundColor: _getButtonColor(text),
+                                    onPressed: () => _onButtonPressed(text),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

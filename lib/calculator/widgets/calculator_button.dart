@@ -29,42 +29,50 @@ class CalculatorButton extends StatelessWidget {
     // Operator/action buttons will receive distinct text coloring and font weights.
     final isAction = ['AC', 'CE', '%', '÷', '×', '−', '+', '='].contains(text);
 
-    return GestureDetector(
-      onTap: onPressed, // Triggers parent callback when tapped
-      child: AspectRatio(
-        // Forces a 1:1 width-to-height ratio so that the button stays a perfect
-        // square area, which allows BoxShape.circle to form a perfect circle.
-        aspectRatio: 1,
-        child: Container(
-          decoration: BoxDecoration(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final shortSide = constraints.maxWidth < constraints.maxHeight
+            ? constraints.maxWidth
+            : constraints.maxHeight;
+        final fontSize = (shortSide * 0.32).clamp(16.0, 40.0);
+        final radius = (shortSide * 0.18).clamp(12.0, 28.0);
+
+        return SizedBox(
+          width: constraints.maxWidth,
+          height: constraints.maxHeight,
+          child: Material(
             color: backgroundColor,
-            shape: BoxShape.circle, // Clips the container to a circular shape
-            boxShadow: const [
-              // Subtle shadow underneath the button to create a premium, elevated feel
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 4,
-                offset: Offset(0, 2),
+            borderRadius: BorderRadius.circular(radius),
+            elevation: 2,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onPressed,
+              borderRadius: BorderRadius.circular(radius),
+              child: Center(
+                child: isBackspace
+                    ? Icon(
+                        Icons.backspace,
+                        color: Colors.grey[700],
+                        size: fontSize,
+                      )
+                    : Text(
+                        text,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: isAction
+                              ? Colors.blue[900]
+                              : Colors.grey[800],
+                          fontSize: fontSize,
+                          fontWeight: isAction
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                        ),
+                      ),
               ),
-            ],
+            ),
           ),
-          child: Center(
-            // If it's a backspace button, render a backspace icon.
-            // Otherwise, render the label text with custom typography rules.
-            child: isBackspace
-                ? Icon(Icons.backspace, color: Colors.grey[700], size: 25)
-                : Text(
-                    text,
-                    style: TextStyle(
-                      // Action buttons use dark blue text, while numbers use standard grey text
-                      color: isAction ? Colors.blue[900] : Colors.grey[800],
-                      fontSize: 25,
-                      fontWeight: isAction ? FontWeight.bold : FontWeight.w500,
-                    ),
-                  ),
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
